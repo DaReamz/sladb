@@ -7,7 +7,7 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=3000
+    PORT=8080
 
 # Install system dependencies (minimal set)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -33,7 +33,7 @@ RUN mkdir -p /app/logs
 RUN chmod +x /app/entrypoint.sh
 
 # Expose the port
-EXPOSE 3000
+EXPOSE 8080
 
 # Health check for Railway
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
