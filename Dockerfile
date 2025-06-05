@@ -1,5 +1,5 @@
-# Use Python 3.11 as the base image
-FROM python:3.11
+# Use Python 3.11 slim image for smaller size
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -9,26 +9,35 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=3000
 
-# Install system dependencies
+# Install system dependencies (minimal set)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
-    curl \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Doppler using the install script
-RUN curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh
-
-
-# Copy project files
-COPY . /app/
+# Copy project files first (for better caching)
+COPY pyproject.toml ./
 
 # Install Python dependencies
-# Using pip to install the project as a package
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
+
+# Copy the rest of the application
+COPY . .
+
+# Create logs directory
+RUN mkdir -p /app/logs
 
 # Make the entrypoint script executable
 RUN chmod +x /app/entrypoint.sh
+
+# Expose the port
+EXPOSE 3000
+
+# Health check for Railway
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Set the entrypoint to the startup script
 ENTRYPOINT ["/app/entrypoint.sh"]
